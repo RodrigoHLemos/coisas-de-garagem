@@ -1,0 +1,40 @@
+1) WHAT — O que estamos fazendo?
+
+Objetivo principal:
+Desenvolver um sistema web que organize garage sales de ponta a ponta: cadastro de vendedores e eventos, registro de produtos com preço e descrição, geração de **QR codes** por item e fluxo de compra simplificado 
+para o comprador (scan → login → confirmação → registro automático da venda).
+
+2) WHY — Por que este projeto é importante?
+
+Motivação:
+Vendas de garagem costumam ser caóticas e manuais. O sistema:
+
+> Automatiza o controle (adeus planilha e papel);
+> Acelera a experiência do comprador (apenas escanear e confirmar);
+> Garante transparência com histórico em tempo real de itens e vendas;
+> Escala para múltiplos vendedores e eventos, mantendo tudo organizado.
+
+3) WHO — Quem está envolvido e é responsável pelo sucesso?
+
+Equipe e papéis:
+
+Raul Falluh — Frontend Developer
+Rodrigo Lemos — Backend Developer
+Rodrigo Castro — Database Developer
+Rafael Irvine — Backend Developer & Documentador
+
+Responsabilidade compartilhada: cada membro responde pela sua frente e pela integração contínua, assegurando entregas funcionais em cada marco.
+
+4) WHERE — Onde o projeto será desenvolvido e acompanhado?
+Ambientes e ferramentas:
+
+Desenvolvimento:
+
+  - Repositório: GitHub (controle de versão e PRs)
+  - Frontend: React.js
+  - Backend: Node.js (a definir framework)
+  - Banco de dados: PostgreSQL
+Acompanhamento:
+
+  - Gestão de tarefas: GitHub Projects
+  - Comunicação: WhatsApp / Discord
