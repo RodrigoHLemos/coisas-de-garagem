@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # PostgreSQL local removido - usar Supabase cloud
+  # Para desenvolvimento local com Supabase:
+  # 1. Crie projeto em https://supabase.com
+  # 2. Configure .env com credenciais
+  # 3. Execute migrations via Dashboard
+
+  redis:
+    image: redis:7-alpine
+    container_name: garage_sale_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - garage_sale_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: garage_sale_backend
+    env_file:
+      - ./backend/.env  # Usar arquivo .env com credenciais Supabase
+    environment:
+      # Sobrescrever variáveis se necessário
+      REDIS_URL: redis://redis:6379/0
+      HOST: 0.0.0.0
+      PORT: 8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - garage_sale_network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    image: nginx:alpine
+    container_name: garage_sale_frontend
+    ports:
+      - "80:80"
+    volumes:
+      - ./:/usr/share/nginx/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - garage_sale_network
+    depends_on:
+      - backend
+
+volumes:
+  redis_data:
+
+networks:
+  garage_sale_network:
+    driver: bridge
