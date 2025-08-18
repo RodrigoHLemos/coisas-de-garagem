@@ -13,6 +13,21 @@ A API usa JWT (JSON Web Tokens) via Supabase Auth. Inclua o token no header:
 Authorization: Bearer <seu_token_aqui>
 ```
 
+## Status de Implementação
+
+| Endpoint | Método | Status | Descrição |
+|----------|--------|--------|------------|
+| `/auth/register` | POST | ✅ Implementado | Registro de usuário |
+| `/auth/login` | POST | ✅ Implementado | Login com email/senha |
+| `/auth/refresh` | POST | ⏳ Pendente | Renovar token |
+| `/auth/logout` | POST | ⏳ Pendente | Logout |
+| `/users/profile` | GET | ✅ Implementado | Obter perfil |
+| `/users/profile` | PUT | ✅ Implementado | Atualizar perfil |
+| `/products` | GET | ⏳ Pendente | Listar produtos |
+| `/products` | POST | ⏳ Pendente | Criar produto |
+| `/sales` | GET | ⏳ Pendente | Listar vendas |
+| `/qr-codes` | GET | ⏳ Pendente | Gerar QR Code |
+
 ## Endpoints
 
 ### 🔐 Autenticação
@@ -51,7 +66,14 @@ Registra um novo usuário.
 #### POST `/auth/login`
 Autentica um usuário.
 
-**Request Body:**
+**Request Body (form-data):**
+```
+Content-Type: application/x-www-form-urlencoded
+
+username=usuario@exemplo.com&password=SenhaForte123!
+```
+
+**Ou via JSON (para testes):**
 ```json
 {
   "username": "usuario@exemplo.com",

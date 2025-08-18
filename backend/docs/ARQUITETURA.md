@@ -29,19 +29,20 @@ Evitamos duplicação de código através de abstrações e reutilização de co
 backend/
 ├── app/
 │   ├── api/                 # Camada de Apresentação
+│   │   ├── deps.py          # Dependências compartilhadas (autenticação)
 │   │   └── v1/
 │   │       ├── endpoints/   # Endpoints da API REST
-│   │       │   ├── auth.py
-│   │       │   ├── products.py
-│   │       │   ├── sales.py
-│   │       │   ├── qr_codes.py
-│   │       │   └── users.py
+│   │       │   ├── auth.py      ✅ Implementado
+│   │       │   ├── products.py  ⏳ Pendente
+│   │       │   ├── sales.py     ⏳ Pendente
+│   │       │   ├── qr_codes.py  ⏳ Pendente
+│   │       │   └── users.py     ✅ Implementado
 │   │       ├── schemas/     # Schemas Pydantic para validação
-│   │       │   ├── auth.py
-│   │       │   ├── product.py
-│   │       │   ├── sale.py
-│   │       │   ├── qr_code.py
-│   │       │   └── user.py
+│   │       │   ├── auth.py      ✅ Implementado
+│   │       │   ├── product.py   ✅ Implementado
+│   │       │   ├── sale.py      ✅ Implementado
+│   │       │   ├── qr_code.py   ✅ Implementado
+│   │       │   └── user.py      ✅ Implementado
 │   │       └── router.py    # Roteador principal da API
 │   │
 │   ├── core/               # Configurações Centrais
@@ -64,20 +65,20 @@ backend/
 │   │
 │   ├── infrastructure/     # Camada de Infraestrutura
 │   │   ├── database/       # Conexão e configuração do banco
-│   │   │   └── connection.py
+│   │   │   └── connection.py     ✅ Implementado
 │   │   ├── repositories/   # Implementações dos repositórios
-│   │   │   ├── product_repository.py
-│   │   │   └── user_repository.py
+│   │   │   ├── product_repository.py  ✅ Implementado
+│   │   │   └── user_repository.py     ✅ Implementado
 │   │   └── supabase/       # Cliente Supabase
-│   │       └── client.py
+│   │       └── client.py              ✅ Implementado
 │   │
 │   ├── services/           # Camada de Aplicação
 │   │   ├── auth/           # Serviços de autenticação
-│   │   │   └── service.py
+│   │   │   └── service.py        ✅ Implementado
 │   │   ├── product/        # Serviços de produtos
-│   │   │   └── service.py
-│   │   ├── sale/           # Serviços de vendas
-│   │   └── qr_code/        # Serviços de QR Code
+│   │   │   └── service.py        ✅ Estrutura criada
+│   │   ├── sale/           # Serviços de vendas      ⏳ Pendente
+│   │   └── qr_code/        # Serviços de QR Code     ⏳ Pendente
 │   │
 │   ├── shared/             # Componentes Compartilhados
 │   │   └── exceptions/     # Exceções customizadas
@@ -87,11 +88,14 @@ backend/
 │   └── main.py            # Ponto de entrada da aplicação
 ├── migrations/            # Migrations SQL do Supabase
 │   └── supabase/
-│       ├── 001_initial_schema.sql
-│       ├── 002_row_level_security.sql
-│       └── 003_storage_setup.sql
+│       ├── 001_initial_schema.sql              ✅ Executado
+│       ├── 002_row_level_security.sql         ✅ Executado
+│       ├── 003_storage_setup.sql              ✅ Executado
+│       └── 006_fix_auth_trigger_metadata.sql  ✅ Executado
 ├── tests/                # Testes automatizados
-│   └── test_setup.py
+│   ├── test_setup.py          ✅ Implementado
+│   ├── test_auth.py           ✅ Implementado
+│   └── test_supabase_direct.py ✅ Implementado
 └── docs/                 # Documentação detalhada
 ```
 

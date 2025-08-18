@@ -69,6 +69,12 @@ SUPABASE_JWT_SECRET=seu-jwt-secret
    - `migrations/supabase/001_initial_schema.sql`
    - `migrations/supabase/002_row_level_security.sql`
    - `migrations/supabase/003_storage_setup.sql`
+   - `migrations/supabase/006_fix_auth_trigger_metadata.sql` **(⚠️ IMPORTANTE!)**
+
+### Configurar Autenticação (Desenvolvimento)
+1. No Dashboard > Authentication > Providers
+2. **Desmarque** "Confirm email" para desenvolvimento
+3. Isso permite login imediato após registro
 
 ### Criar Storage Buckets
 No Dashboard > Storage, crie 3 buckets públicos:
@@ -80,13 +86,22 @@ No Dashboard > Storage, crie 3 buckets públicos:
 
 ```bash
 # Testar configuração
-python test_setup.py
+python tests/test_setup.py
 
-# Se tudo OK, iniciar servidor
+# Testar autenticação
+python tests/test_auth.py
+
+# Se tudo OK, iniciar servidor backend
 uvicorn app.main:app --reload
+
+# Em outro terminal, iniciar servidor frontend
+cd ../frontend
+python3 -m http.server 8080
 ```
 
-Acesse: http://localhost:8000/docs
+Acesse:
+- **Backend API**: http://localhost:8000/docs
+- **Frontend**: http://localhost:8080
 
 ## 4. Comandos Úteis
 
@@ -129,11 +144,8 @@ curl -X POST http://localhost:8000/api/v1/auth/register \
 ### Fazer Login
 ```bash
 curl -X POST http://localhost:8000/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "teste@exemplo.com",
-    "password": "Senha123!"
-  }'
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=teste@exemplo.com&password=Senha123!"
 ```
 
 ## 6. Estrutura do Projeto
@@ -187,12 +199,27 @@ pip install -r requirements.txt
 - Verifique políticas RLS
 - Use Service Role Key para admin
 
-## 8. Próximos Passos
+## 8. Status Atual
 
-1. ✅ Backend configurado
-2. 📝 Implementar endpoints faltantes
-3. 🎨 Conectar frontend
-4. 🚀 Deploy
+### ✅ Implementado
+- Sistema de autenticação completo (registro, login, JWT)
+- Perfil de usuário (GET/PUT)
+- Integração Supabase (Auth, Database, Storage)
+- Frontend com modais de login/registro
+- Trigger SQL para criação automática de perfis
+
+### 🚧 Em Desenvolvimento
+- CRUD de produtos
+- Sistema de vendas
+- Geração de QR codes
+- Dashboard vendedor/comprador
+
+## 9. Próximos Passos
+
+1. ✅ Backend e Frontend configurados
+2. 📝 Implementar endpoints de produtos
+3. 📱 Adicionar sistema de QR codes
+4. 🚀 Deploy para produção
 
 ## Links Úteis
 

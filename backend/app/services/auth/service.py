@@ -70,15 +70,69 @@ class AuthService:
                 metadata=metadata
             )
             
+            # Tentar criar perfil manualmente (caso trigger falhe)
+            if result.get("user"):
+                user_data = result["user"]
+                try:
+                    await self._create_profile(
+                        user_id=user_data["id"],
+                        email=email,
+                        name=name,
+                        cpf=cpf,
+                        phone=phone,
+                        role=role
+                    )
+                except Exception as profile_error:
+                    # Log mas não falha o registro
+                    import logging
+                    logging.warning(f"Perfil será criado pela trigger: {profile_error}")
+            
+            # O Supabase retorna o usuário diretamente, não em um objeto "user"
             return {
-                "user": result.get("user"),
-                "session": result.get("access_token")
+                "user": result,  # result já é o objeto do usuário
+                "session": None  # Signup não retorna sessão diretamente
             }
             
         except Exception as e:
-            if "already registered" in str(e).lower():
+            if "já registrado" in str(e).lower() or "already registered" in str(e).lower():
                 raise UserAlreadyExistsError(f"Email {email} já está registrado")
             raise
+    
+    async def _create_profile(
+        self,
+        user_id: str,
+        email: str,
+        name: str,
+        cpf: str,
+        phone: str,
+        role: str
+    ) -> None:
+        """Criar perfil do usuário na tabela profiles."""
+        import httpx
+        
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{self.client.url}/rest/v1/profiles",
+                    headers=self.client.service_headers,
+                    json={
+                        "id": user_id,
+                        "email": email,
+                        "name": name,
+                        "cpf": cpf,
+                        "phone": phone,
+                        "role": role,
+                        "is_active": True,
+                        "is_verified": False
+                    }
+                )
+                
+                if response.status_code not in (200, 201):
+                    import logging
+                    logging.error(f"Erro ao criar perfil: {response.text}")
+        except Exception as e:
+            import logging
+            logging.error(f"Erro ao criar perfil do usuário: {e}")
     
     async def login(
         self,
@@ -104,11 +158,14 @@ class AuthService:
                 password=password
             )
             
+            # O Supabase retorna os tokens diretamente
             return {
-                "user": result.user,
-                "session": result.session,
-                "access_token": result.session.access_token,
-                "refresh_token": result.session.refresh_token
+                "user": result.get("user"),
+                "session": result,  # result já contém os tokens
+                "access_token": result.get("access_token"),
+                "refresh_token": result.get("refresh_token"),
+                "token_type": result.get("token_type", "bearer"),
+                "expires_in": result.get("expires_in", 3600)
             }
             
         except Exception as e:

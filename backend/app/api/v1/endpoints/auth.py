@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....infrastructure.database.connection import get_session
 from ....services.auth.service import AuthService
+from ....shared.exceptions.auth import InvalidCredentialsError
 from ....api.v1.schemas.auth import (
     UserRegisterRequest,
     UserLoginRequest,
@@ -69,16 +70,28 @@ async def login(
     Returns access and refresh tokens.
     """
     auth_service = AuthService()
-    tokens = await auth_service.login(form_data.username, form_data.password)
     
-    if not tokens:
+    try:
+        result = await auth_service.login(form_data.username, form_data.password)
+        
+        # Retornar no formato OAuth2
+        return TokenResponse(
+            access_token=result.get("access_token"),
+            token_type=result.get("token_type", "bearer"),
+            expires_in=result.get("expires_in", 3600),
+            refresh_token=result.get("refresh_token")
+        )
+    except InvalidCredentialsError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            detail="Email ou senha inválidos",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
-    return tokens
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 
 @router.post("/refresh", response_model=TokenResponse)

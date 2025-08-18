@@ -91,6 +91,7 @@ pip install -r requirements.txt
 4. **Configure o Supabase:**
    - Crie um projeto no [Supabase Dashboard](https://supabase.com)
    - Copie as credenciais (URL, anon key, service key)
+   - **IMPORTANTE**: Desative "Confirm email" em Authentication > Providers para desenvolvimento
 
 5. **Configure o arquivo `.env`:**
 ```bash
@@ -104,17 +105,26 @@ cp .env.example .env
      - `migrations/supabase/001_initial_schema.sql`
      - `migrations/supabase/002_row_level_security.sql`
      - `migrations/supabase/003_storage_setup.sql`
+     - `migrations/supabase/006_fix_auth_trigger_metadata.sql` (IMPORTANTE!)
 
 7. **Crie os Storage Buckets:**
    - No Dashboard > Storage
    - Crie 3 buckets públicos: `products`, `qr-codes`, `avatars`
 
-8. **Inicie o servidor:**
+8. **Inicie o servidor backend:**
 ```bash
 uvicorn app.main:app --reload
 ```
 
-A API estará disponível em `http://localhost:8000`
+9. **Inicie o servidor frontend (em outro terminal):**
+```bash
+cd ../frontend
+python3 -m http.server 8080
+```
+
+- **Backend (API)**: `http://localhost:8000`
+- **Frontend**: `http://localhost:8080`
+- **Documentação API**: `http://localhost:8000/docs`
 
 ## 📚 Documentação
 
@@ -136,13 +146,19 @@ A API estará disponível em `http://localhost:8000`
 ## 🎯 Funcionalidades Principais
 
 ### ✅ Implementadas
-- **Autenticação com Supabase Auth**: Registro, login, tokens JWT
+- **Autenticação com Supabase Auth**: Registro, login, tokens JWT ✅
+- **Perfil de Usuário**: CRUD completo ✅
+- **Frontend Integrado**: Modais de login/registro funcionais ✅
+- **Validação de Dados**: CPF, email, telefone ✅
+- **Trigger SQL**: Criação automática de perfis ✅
+- **CORS Configurado**: Comunicação frontend-backend ✅
+
+### 🚧 Em Desenvolvimento
 - **Gestão de Produtos**: CRUD completo com categorias
 - **Geração de QR Codes**: QR codes únicos para cada produto
 - **Sistema de Vendas**: Carrinho, checkout, histórico
 - **Upload de Imagens**: Via Supabase Storage
 - **Busca e Filtros**: Por categoria, preço, texto
-- **Validação de Dados**: CPF, email, telefone
 - **Row Level Security**: Segurança a nível de banco
 
 ### 🚧 Em Desenvolvimento
@@ -155,14 +171,17 @@ A API estará disponível em `http://localhost:8000`
 ## 🧪 Testes
 
 ```bash
-# Executar testes
-pytest tests/ -v
+# Testar autenticação
+python tests/test_auth.py
 
-# Com coverage
-pytest tests/ -v --cov=app
+# Testar conexão Supabase
+python tests/test_supabase_direct.py
 
 # Testar configuração
 python tests/test_setup.py
+
+# Executar todos os testes (quando disponível)
+pytest tests/ -v
 ```
 
 ## 🐳 Docker
