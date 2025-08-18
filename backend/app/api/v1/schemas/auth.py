@@ -15,6 +15,7 @@ class UserRegisterRequest(BaseModel):
     name: str = Field(..., min_length=3, max_length=100)
     phone: str = Field(..., min_length=10, max_length=15)
     password: str = Field(..., min_length=8)
+    role: str = Field(default="buyer", pattern="^(buyer|seller|admin)$")
     
     @validator('cpf')
     def validate_cpf(cls, v):
@@ -96,8 +97,8 @@ class UserResponse(BaseModel):
     role: str
     is_active: bool
     is_verified: bool
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     last_login: Optional[datetime] = None
     
     class Config:

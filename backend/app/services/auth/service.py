@@ -5,7 +5,7 @@ Segue o princípio de Single Responsibility
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
 
-from app.infrastructure.supabase.client import SupabaseClient
+from app.infrastructure.supabase.client import SimpleSupabaseClient
 from app.domain.entities.user import User
 from app.domain.value_objects.email import Email
 from app.core.config import get_settings
@@ -26,7 +26,7 @@ class AuthService:
     """
     
     def __init__(self):
-        self.client = SupabaseClient()
+        self.client = SimpleSupabaseClient()
         self.settings = get_settings()
     
     async def register(
@@ -71,8 +71,8 @@ class AuthService:
             )
             
             return {
-                "user": result.user,
-                "session": result.session
+                "user": result.get("user"),
+                "session": result.get("access_token")
             }
             
         except Exception as e:

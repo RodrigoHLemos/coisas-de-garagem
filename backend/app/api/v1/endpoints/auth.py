@@ -35,9 +35,28 @@ async def register(
     - **phone**: Phone number
     - **password**: Password (min 8 characters)
     """
-    auth_service = AuthService(session)
-    user = await auth_service.register_user(request)
-    return user
+    auth_service = AuthService()
+    result = await auth_service.register(
+        email=request.email,
+        password=request.password,
+        name=request.name,
+        cpf=request.cpf,
+        phone=request.phone,
+        role=request.role
+    )
+    user_data = result.get("user", {})
+    user_metadata = user_data.get("user_metadata", {})
+    
+    return UserResponse(
+        id=user_data.get("id", ""),
+        email=user_data.get("email", request.email),
+        name=user_metadata.get("name", request.name),
+        cpf=user_metadata.get("cpf", request.cpf),
+        phone=user_metadata.get("phone", request.phone),
+        role=user_metadata.get("role", request.role),
+        is_active=True,
+        is_verified=user_data.get("email_confirmed_at") is not None
+    )
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -49,7 +68,7 @@ async def login(
     Login with email and password.
     Returns access and refresh tokens.
     """
-    auth_service = AuthService(session)
+    auth_service = AuthService()
     tokens = await auth_service.login(form_data.username, form_data.password)
     
     if not tokens:

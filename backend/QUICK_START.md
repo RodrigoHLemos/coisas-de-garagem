@@ -5,6 +5,7 @@
 ### Pré-requisitos
 - Python 3.11+ instalado
 - Conta no Supabase (grátis em https://supabase.com)
+- Git instalado
 
 ### Passos
 
@@ -140,15 +141,29 @@ curl -X POST http://localhost:8000/api/v1/auth/login \
 ```
 backend/
 ├── app/
-│   ├── api/           # Endpoints REST
+│   ├── api/v1/        # API REST v1
+│   │   ├── endpoints/ # Controllers
+│   │   ├── schemas/   # Validações
+│   │   └── router.py  # Rotas
 │   ├── core/          # Configurações
 │   ├── domain/        # Lógica de negócio
-│   ├── infrastructure/# Banco e storage
+│   │   ├── entities/ # Entidades
+│   │   ├── repositories/ # Interfaces
+│   │   └── value_objects/ # Valores
+│   ├── infrastructure/# Implementações
+│   │   ├── database/  # Conexão DB
+│   │   ├── repositories/ # Repos
+│   │   └── supabase/  # Cliente
 │   ├── services/      # Serviços
-│   └── shared/        # Utilitários
+│   │   ├── auth/      # Autenticação
+│   │   ├── product/   # Produtos
+│   │   └── sale/      # Vendas
+│   └── shared/        # Compartilhado
+│       └── exceptions/# Exceções
 ├── migrations/        # Scripts SQL
 ├── tests/            # Testes
-├── .env              # Configurações (não commitpar)
+├── docs/             # Documentação
+├── .env              # Configurações (não commitar)
 └── requirements.txt  # Dependências
 ```
 
@@ -181,7 +196,9 @@ pip install -r requirements.txt
 
 ## Links Úteis
 
-- [Documentação Completa](docs/ARQUITETURA.md)
+- [Documentação da API](docs/API.md)
+- [Arquitetura do Sistema](docs/ARQUITETURA.md)
+- [Integração Supabase](docs/INTEGRACAO_SUPABASE.md)
 - [Supabase Dashboard](https://app.supabase.com)
 - [FastAPI Docs](https://fastapi.tiangolo.com)
 - [Supabase Docs](https://supabase.com/docs)

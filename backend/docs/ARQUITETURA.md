@@ -9,7 +9,7 @@
 
 ## Visão Geral
 
-O backend do sistema "Coisas de Garagem" foi desenvolvido seguindo os princípios de **Domain-Driven Design (DDD)** e **Clean Architecture**, garantindo separação clara de responsabilidades, alta manutenibilidade e testabilidade.
+O backend do sistema "Coisas de Garagem" foi desenvolvido seguindo os princípios de **Domain-Driven Design (DDD)** e **Clean Architecture**, integrado com **Supabase** como Backend as a Service, garantindo separação clara de responsabilidades, alta manutenibilidade e testabilidade.
 
 ## Princípios Arquiteturais
 
@@ -31,34 +31,68 @@ backend/
 │   ├── api/                 # Camada de Apresentação
 │   │   └── v1/
 │   │       ├── endpoints/   # Endpoints da API REST
+│   │       │   ├── auth.py
+│   │       │   ├── products.py
+│   │       │   ├── sales.py
+│   │       │   ├── qr_codes.py
+│   │       │   └── users.py
 │   │       ├── schemas/     # Schemas Pydantic para validação
+│   │       │   ├── auth.py
+│   │       │   ├── product.py
+│   │       │   ├── sale.py
+│   │       │   ├── qr_code.py
+│   │       │   └── user.py
 │   │       └── router.py    # Roteador principal da API
 │   │
 │   ├── core/               # Configurações Centrais
-│   │   └── config.py       # Gerenciamento de configurações
+│   │   └── config.py       # Gerenciamento de configurações (Supabase, DB, etc)
 │   │
 │   ├── domain/             # Camada de Domínio (Núcleo do Negócio)
 │   │   ├── entities/       # Entidades do domínio
+│   │   │   ├── base.py
+│   │   │   ├── product.py
+│   │   │   └── user.py
 │   │   ├── repositories/   # Interfaces de repositório
+│   │   │   ├── base.py
+│   │   │   ├── product.py
+│   │   │   └── user.py
 │   │   └── value_objects/  # Objetos de valor
+│   │       ├── cpf.py
+│   │       ├── email.py
+│   │       ├── money.py
+│   │       └── phone.py
 │   │
 │   ├── infrastructure/     # Camada de Infraestrutura
 │   │   ├── database/       # Conexão e configuração do banco
-│   │   ├── storage/        # Armazenamento de arquivos
-│   │   └── external/       # Serviços externos
+│   │   │   └── connection.py
+│   │   ├── repositories/   # Implementações dos repositórios
+│   │   │   ├── product_repository.py
+│   │   │   └── user_repository.py
+│   │   └── supabase/       # Cliente Supabase
+│   │       └── client.py
 │   │
 │   ├── services/           # Camada de Aplicação
 │   │   ├── auth/           # Serviços de autenticação
-│   │   ├── products/       # Serviços de produtos
-│   │   ├── sales/          # Serviços de vendas
-│   │   └── qr_codes/       # Serviços de QR Code
+│   │   │   └── service.py
+│   │   ├── product/        # Serviços de produtos
+│   │   │   └── service.py
+│   │   ├── sale/           # Serviços de vendas
+│   │   └── qr_code/        # Serviços de QR Code
 │   │
 │   ├── shared/             # Componentes Compartilhados
-│   │   ├── exceptions/     # Exceções customizadas
-│   │   ├── utils/          # Utilitários
-│   │   └── validators/     # Validadores reutilizáveis
+│   │   └── exceptions/     # Exceções customizadas
+│   │       ├── auth.py
+│   │       └── domain.py
 │   │
 │   └── main.py            # Ponto de entrada da aplicação
+├── migrations/            # Migrations SQL do Supabase
+│   └── supabase/
+│       ├── 001_initial_schema.sql
+│       ├── 002_row_level_security.sql
+│       └── 003_storage_setup.sql
+├── tests/                # Testes automatizados
+│   └── test_setup.py
+└── docs/                 # Documentação detalhada
 ```
 
 ## Explicação Detalhada dos Arquivos
