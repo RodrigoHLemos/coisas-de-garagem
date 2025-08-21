@@ -5,8 +5,33 @@ const config = {
     
     // URL da API - muda automaticamente entre desenvolvimento e produção
     get API_URL() {
+        // Permite override via meta tag ou variável global
+        if (window.API_URL) {
+            return window.API_URL;
+        }
+        
+        // Verifica se há uma meta tag com a URL da API
+        const metaApiUrl = document.querySelector('meta[name="api-url"]');
+        if (metaApiUrl && metaApiUrl.content) {
+            return metaApiUrl.content;
+        }
+        
+        // URLs padrão baseadas no ambiente
         if (this.isProduction) {
-            // URL do backend no Render (será atualizada após o deploy)
+            // Em produção, usa subdomínio api do mesmo domínio ou URL conhecida
+            const currentDomain = window.location.hostname;
+            
+            // Se estiver no Vercel, usa a URL do Render
+            if (currentDomain.includes('vercel.app')) {
+                return 'https://coisas-de-garagem-api.onrender.com/api/v1';
+            }
+            
+            // Se tiver domínio próprio no futuro
+            if (currentDomain.includes('coisasdegaragem.com')) {
+                return 'https://api.coisasdegaragem.com/api/v1';
+            }
+            
+            // Fallback para produção
             return 'https://coisas-de-garagem-api.onrender.com/api/v1';
         } else {
             // Desenvolvimento local
