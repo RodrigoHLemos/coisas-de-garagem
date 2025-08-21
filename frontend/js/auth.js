@@ -1,5 +1,5 @@
-// Configuração da API
-const API_URL = 'http://localhost:8000/api/v1';
+// Configuração da API - usa config.js
+const API_URL = window.appConfig ? window.appConfig.API_URL : 'http://localhost:8000/api/v1';
 
 // Estado da autenticação
 let currentUser = null;

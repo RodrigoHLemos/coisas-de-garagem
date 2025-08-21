@@ -1,0 +1,30 @@
+services:
+  # Web Service para a API FastAPI
+  - type: web
+    name: coisas-de-garagem-api
+    runtime: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SUPABASE_URL
+        sync: false  # Será definida manualmente no dashboard
+      - key: SUPABASE_ANON_KEY
+        sync: false  # Será definida manualmente no dashboard
+      - key: SUPABASE_SERVICE_KEY
+        sync: false  # Será definida manualmente no dashboard
+      - key: ENVIRONMENT
+        value: production
+      - key: CORS_ORIGINS
+        value: "https://coisas-de-garagem.vercel.app,https://*.vercel.app"
+    # Configurações do plano gratuito
+    plan: free
+    # Health check
+    healthCheckPath: /health
+    # Auto deploy quando push no branch
+    autoDeploy: true
+    # Branch para deploy
+    branch: prototipo-fullstack
+    # Root directory
+    rootDir: backend

@@ -70,6 +70,10 @@ class CORSSettings(BaseSettings):
     @validator("cors_origins", pre=True)
     def parse_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
         if isinstance(v, str):
+            # Se for "*", retorna como está
+            if v == "*":
+                return ["*"]
+            # Senão, divide por vírgula
             return [origin.strip() for origin in v.split(",")]
         return v
 
