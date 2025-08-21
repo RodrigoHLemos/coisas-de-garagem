@@ -1,79 +1,18 @@
+// Configuração da API
+const API_URL = 'http://localhost:8000/api/v1';
+
+// Estado da aplicação
 let html5QrCode = null;
 let isScanning = false;
 let currentProduct = null;
+let authToken = null;
+let currentUser = null;
 
-let availableProducts = [
-    {
-        id: 1,
-        name: "Bicicleta Infantil",
-        price: 80.00,
-        description: "Bicicleta infantil em ótimo estado, aro 16, cor azul",
-        seller: "João Silva",
-        category: "toys",
-        image: null,
-        available: true
-    },
-    {
-        id: 2,
-        name: "Mesa de Centro",
-        price: 120.00,
-        description: "Mesa de centro de madeira, perfeita para sala de estar",
-        seller: "Maria Santos",
-        category: "furniture",
-        image: null,
-        available: true
-    },
-    {
-        id: 3,
-        name: "Livros Diversos",
-        price: 25.00,
-        description: "Coleção de livros variados, ficção e não-ficção",
-        seller: "Carlos Silva",
-        category: "books",
-        image: null,
-        available: true
-    },
-    {
-        id: 4,
-        name: "Smartphone Samsung",
-        price: 350.00,
-        description: "Samsung Galaxy A54, 128GB, em excelente estado",
-        seller: "Ana Costa",
-        category: "electronics",
-        image: null,
-        available: true
-    }
-];
+// Lista de produtos (será carregada do backend)
+let availableProducts = [];
 
-let purchaseHistory = [
-    {
-        id: 1,
-        productName: "Bicicleta Infantil",
-        price: 80.00,
-        seller: "João Silva",
-        date: "2024-12-15",
-        status: "completed",
-        image: null
-    },
-    {
-        id: 2,
-        productName: "Mesa de Centro",
-        price: 120.00,
-        seller: "Maria Santos",
-        date: "2024-12-14",
-        status: "completed",
-        image: null
-    },
-    {
-        id: 3,
-        productName: "Livros Diversos",
-        price: 25.00,
-        seller: "Carlos Silva",
-        date: "2024-12-13",
-        status: "completed",
-        image: null
-    }
-];
+// Histórico de compras (TODO: integrar com backend quando houver endpoint)
+let purchaseHistory = [];
 
 const toggleCameraBtn = document.getElementById('toggle-camera');
 const scannerPlaceholder = document.getElementById('scanner-placeholder');
@@ -86,52 +25,66 @@ const productModal = document.getElementById('product-modal');
 const purchaseModal = document.getElementById('purchase-modal');
 const successToast = document.getElementById('success-toast');
 
-let loggedUser = null;
-
-function saveUser(user) {
-    localStorage.setItem('garage_sale_user', JSON.stringify(user));
-    loggedUser = user;
+// Verificar autenticação
+function checkAuth() {
+    const token = localStorage.getItem('access_token');
+    const user = localStorage.getItem('user_data');
+    
+    if (!token || !user) {
+        return false;
+    }
+    
+    authToken = token;
+    currentUser = JSON.parse(user);
+    
+    // Verificar se é comprador
+    if (currentUser.role !== 'buyer') {
+        showToast('Acesso negado. Apenas compradores podem acessar esta página.', 'error');
+        return false;
+    }
+    
+    return true;
 }
 
-function loadUser() {
-    const user = localStorage.getItem('garage_sale_user');
-    if (user) {
-        loggedUser = JSON.parse(user);
+// Atualizar informações do usuário na navbar
+function updateUserInfo() {
+    const userMenu = document.querySelector('.user-menu span');
+    if (userMenu && currentUser) {
+        userMenu.textContent = currentUser.name || currentUser.email;
     }
 }
-loadUser();
 
+// Função removida - agora usamos autenticação do backend
 function requireLogin(next) {
-    if (loggedUser) {
+    if (currentUser) {
         next();
     } else {
-        document.getElementById('login-modal').classList.add('active');
-        document.getElementById('login-form').onsubmit = function(e) {
-            e.preventDefault();
-            const user = {
-                name: document.getElementById('user-name').value.trim(),
-                cpf: document.getElementById('user-cpf').value.trim(),
-                email: document.getElementById('user-email').value.trim(),
-                phone: document.getElementById('user-phone').value.trim()
-            };
-            if (!user.name || !user.cpf || !user.email || !user.phone) {
-                showToast('Preencha todos os campos', 'error');
-                return;
-            }
-            saveUser(user);
-            document.getElementById('login-modal').classList.remove('active');
-            next();
-        };
-        document.getElementById('close-login-modal').onclick = function() {
-            document.getElementById('login-modal').classList.remove('active');
-        };
+        showToast('Por favor, faça login para realizar compras', 'error');
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 2000);
     }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
+    // Verificar autenticação
+    if (!checkAuth()) {
+        window.location.href = 'index.html';
+        return;
+    }
+    
+    // Atualizar informações do usuário
+    updateUserInfo();
+    
+    // Carregar produtos do backend
+    await loadProductsFromAPI();
     renderAvailableProducts();
+    
+    // Carregar histórico de compras (local por enquanto)
+    loadData();
     renderPurchaseHistory();
     updatePurchaseStats();
+    
     initializeEventListeners();
 });
 
@@ -276,7 +229,7 @@ function extractProductIdFromQR(qrText) {
 }
 
 function findProductById(productId) {
-    return availableProducts.find(product => product.id === productId);
+    return availableProducts.find(product => product.id === productId || product.id === String(productId));
 }
 
 function searchProductManually() {
@@ -301,6 +254,25 @@ function searchProductManually() {
     }
 }
 
+async function loadProductsFromAPI() {
+    try {
+        const response = await fetch(`${API_URL}/products/`, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (response.ok) {
+            availableProducts = await response.json();
+        } else {
+            showToast('Erro ao carregar produtos', 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao carregar produtos:', error);
+        showToast('Erro ao conectar com o servidor', 'error');
+    }
+}
+
 function renderAvailableProducts(filter = 'all') {
     availableProductsGrid.innerHTML = '';
     
@@ -321,21 +293,21 @@ function createProductCard(product) {
     
     card.innerHTML = `
         <div class="product-image">
-            ${product.image ? 
-                `<img src="${product.image}" alt="${product.name}">` : 
+            ${product.images && product.images.length > 0 ? 
+                `<img src="${product.images[0]}" alt="${product.name}">` : 
                 '<i class="fas fa-image"></i>'
             }
-            ${product.available ? '<div class="product-badge">Disponível</div>' : ''}
+            ${product.status === 'available' ? '<div class="product-badge">Disponível</div>' : ''}
         </div>
         <div class="product-content">
             <h3 class="product-name">${product.name}</h3>
-            <div class="product-price">R$ ${product.price.toFixed(2)}</div>
+            <div class="product-price">R$ ${parseFloat(product.price).toFixed(2)}</div>
             <div class="product-seller">
                 <i class="fas fa-store"></i>
-                <span>${product.seller}</span>
+                <span>${product.seller_name || 'Vendedor'}</span>
             </div>
             <div class="product-actions">
-                <button class="btn btn-primary btn-small" onclick="event.stopPropagation(); showProductModal(${product.id})">
+                <button class="btn btn-primary btn-small" onclick="event.stopPropagation(); showProductModal('${product.id}')">
                     Ver Detalhes
                 </button>
             </div>
@@ -397,7 +369,7 @@ function updatePurchaseStats() {
 }
 
 function showProductModal(product) {
-    if (typeof product === 'number') {
+    if (typeof product === 'string' || typeof product === 'number') {
         product = findProductById(product);
     }
     
@@ -406,14 +378,14 @@ function showProductModal(product) {
     currentProduct = product;
 
     const modalImage = document.getElementById('modal-product-image');
-    modalImage.innerHTML = product.image ? 
-        `<img src="${product.image}" alt="${product.name}">` : 
+    modalImage.innerHTML = product.images && product.images.length > 0 ? 
+        `<img src="${product.images[0]}" alt="${product.name}">` : 
         '<i class="fas fa-image"></i>';
     
     document.getElementById('modal-product-name').textContent = product.name;
-    document.getElementById('modal-product-price').textContent = `R$ ${product.price.toFixed(2)}`;
+    document.getElementById('modal-product-price').textContent = `R$ ${parseFloat(product.price).toFixed(2)}`;
     document.getElementById('modal-product-description').textContent = product.description;
-    document.getElementById('modal-seller-name').textContent = product.seller;
+    document.getElementById('modal-seller-name').textContent = product.seller_name || 'Vendedor';
     
     productModal.classList.add('active');
 }
@@ -427,9 +399,9 @@ function showPurchaseModal() {
     if (!currentProduct) return;
     requireLogin(() => {
         document.getElementById('purchase-product-name').textContent = currentProduct.name;
-        document.getElementById('purchase-product-price').textContent = `R$ ${currentProduct.price.toFixed(2)}`;
-        document.getElementById('purchase-seller-name').textContent = currentProduct.seller;
-        document.getElementById('purchase-total-price').textContent = `R$ ${currentProduct.price.toFixed(2)}`;
+        document.getElementById('purchase-product-price').textContent = `R$ ${parseFloat(currentProduct.price).toFixed(2)}`;
+        document.getElementById('purchase-seller-name').textContent = currentProduct.seller_name || 'Vendedor';
+        document.getElementById('purchase-total-price').textContent = `R$ ${parseFloat(currentProduct.price).toFixed(2)}`;
         closeProductModal();
         purchaseModal.classList.add('active');
     });
@@ -439,18 +411,22 @@ function closePurchaseModal() {
     purchaseModal.classList.remove('active');
 }
 
-function confirmPurchase() {
+async function confirmPurchase() {
     if (!currentProduct) return;
+    
+    // TODO: Implementar endpoint de compra no backend
+    // Por enquanto, salvar localmente
     const newPurchase = {
         id: Date.now(),
         productName: currentProduct.name,
-        price: currentProduct.price,
-        seller: currentProduct.seller,
+        price: parseFloat(currentProduct.price),
+        seller: currentProduct.seller_name || 'Vendedor',
         date: new Date().toISOString().split('T')[0],
         status: 'completed',
-        image: currentProduct.image,
-        buyer: loggedUser
+        image: currentProduct.images && currentProduct.images[0],
+        buyer: currentUser
     };
+    
     purchaseHistory.unshift(newPurchase);
     renderPurchaseHistory();
     updatePurchaseStats();
@@ -518,12 +494,26 @@ function loadData() {
     }
 }
 
-loadData();
-
-function addPurchase(purchase) {
-    purchaseHistory.unshift(purchase);
-    saveData();
+// Função de logout
+function handleLogout() {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user_data');
+    window.location.href = 'index.html';
 }
+
+// Adicionar event listener para logout
+document.addEventListener('DOMContentLoaded', function() {
+    const userMenu = document.querySelector('.user-menu');
+    if (userMenu) {
+        userMenu.style.cursor = 'pointer';
+        userMenu.addEventListener('click', function() {
+            if (confirm('Deseja fazer logout?')) {
+                handleLogout();
+            }
+        });
+    }
+});
 
 document.addEventListener('visibilitychange', function() {
     if (document.hidden && isScanning) {

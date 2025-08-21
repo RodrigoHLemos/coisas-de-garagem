@@ -45,11 +45,15 @@ class Product(DomainEntity):
         price: Money,
         seller_id: UUID,
         category: ProductCategory = ProductCategory.OTHER,
+        quantity: int = 1,
+        images: list = None,
         image_url: Optional[str] = None,
         qr_code_data: Optional[str] = None,
         qr_code_image_url: Optional[str] = None,
         status: ProductStatus = ProductStatus.AVAILABLE,
-        id: Optional[UUID] = None
+        id: Optional[UUID] = None,
+        created_at: Optional[object] = None,
+        updated_at: Optional[object] = None
     ):
         super().__init__(id)
         self._name = name
@@ -57,12 +61,19 @@ class Product(DomainEntity):
         self._price = price
         self._seller_id = seller_id
         self._category = category
+        self._quantity = quantity
+        self._images = images or []
         self._image_url = image_url
         self._qr_code_data = qr_code_data
         self._qr_code_image_url = qr_code_image_url
         self._status = status
         self._view_count = 0
         self._reserved_by: Optional[UUID] = None
+        # created_at e updated_at são gerenciados pela classe base
+        if created_at:
+            self._created_at = created_at
+        if updated_at:
+            self._updated_at = updated_at
         self.validate()
 
     @property
@@ -84,6 +95,14 @@ class Product(DomainEntity):
     @property
     def category(self) -> ProductCategory:
         return self._category
+    
+    @property
+    def quantity(self) -> int:
+        return self._quantity
+    
+    @property
+    def images(self) -> list:
+        return self._images
 
     @property
     def image_url(self) -> Optional[str]:
@@ -108,6 +127,16 @@ class Product(DomainEntity):
     @property
     def reserved_by(self) -> Optional[UUID]:
         return self._reserved_by
+    
+    @quantity.setter
+    def quantity(self, value: int):
+        if value < 0:
+            raise DomainValidationError("Quantity cannot be negative")
+        self._quantity = value
+    
+    @images.setter
+    def images(self, value: list):
+        self._images = value or []
 
     @property
     def is_available(self) -> bool:

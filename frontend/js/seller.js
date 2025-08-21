@@ -1,29 +1,10 @@
-let products = [
-    {
-        id: 1,
-        name: "Bicicleta Infantil",
-        price: 80.00,
-        description: "Bicicleta infantil em ótimo estado, aro 16, cor azul",
-        image: null,
-        qrCode: null
-    },
-    {
-        id: 2,
-        name: "Mesa de Centro",
-        price: 120.00,
-        description: "Mesa de centro de madeira, perfeita para sala de estar",
-        image: null,
-        qrCode: null
-    },  
-    {
-        id: 3,
-        name: "Livros Diversos",
-        price: 25.00,
-        description: "Coleção de livros variados, ficção e não-ficção",
-        image: null,
-        qrCode: null
-    }
-];
+// Configuração da API
+const API_URL = 'http://localhost:8000/api/v1';
+
+// Estado dos produtos
+let products = [];
+let authToken = null;
+let currentUser = null;
 
 let currentProduct = null;
 
@@ -37,11 +18,19 @@ const closeModalBtns = document.querySelectorAll('#close-modal, #close-modal-btn
 const downloadPdfBtn = document.getElementById('download-pdf-btn');
 const successToast = document.getElementById('success-toast');
 
-document.addEventListener('DOMContentLoaded', function() {
-    loadProducts();
+document.addEventListener('DOMContentLoaded', async function() {
+    // Verificar autenticação
+    if (!checkAuth()) {
+        window.location.href = 'index.html';
+        return;
+    }
+    
+    // Carregar produtos do backend
+    await loadProductsFromAPI();
     renderProducts();
     updateStats();
     initializeEventListeners();
+    updateUserInfo();
 });
 
 function initializeEventListeners() {
@@ -97,45 +86,91 @@ function validateForm() {
     return true;
 }
 
-function handleAddProduct(e) {
+async function handleAddProduct(e) {
     e.preventDefault();
     
     if (!validateForm()) return;
     
     const name = document.getElementById('product-name').value;
     const price = parseFloat(document.getElementById('product-price').value);
-    const description = document.getElementById('product-description').value;
-    const imageFile = document.getElementById('product-image').files[0];
+    const description = document.getElementById('product-description').value || '';
+    const imageInput = document.getElementById('product-image');
+    console.log('Input de imagem:', imageInput);
+    console.log('Arquivos no input:', imageInput.files);
+    const imageFile = imageInput.files[0];
+    console.log('Arquivo selecionado:', imageFile);
     
-    const newProduct = {
-        id: generateProductId(),
-        name: name,
-        price: price,
-        description: description,
-        image: null,
-        qrCode: null
-    };
+    // Desabilitar botão durante envio
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Adicionando...';
     
-    if (imageFile) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            newProduct.image = e.target.result;
-            addProductToList(newProduct);
+    try {
+        // Processar imagem se houver
+        let imageUrls = [];
+        
+        if (imageFile) {
+            // Converter imagem para base64
+            const reader = new FileReader();
+            const base64Promise = new Promise((resolve) => {
+                reader.onload = (e) => resolve(e.target.result);
+                reader.readAsDataURL(imageFile);
+            });
+            
+            const base64Image = await base64Promise;
+            // Por enquanto, vamos salvar o base64 como URL
+            // Em produção, isso deveria ser enviado para um serviço de storage
+            imageUrls.push(base64Image);
+        }
+        
+        const productData = {
+            name: name,
+            description: description,
+            price: price,
+            category: "other", // Por enquanto usando categoria padrão
+            quantity: 1,
+            images: imageUrls
         };
-        reader.readAsDataURL(imageFile);
-    } else {
-        addProductToList(newProduct);
+        
+        console.log('Arquivo selecionado:', imageFile);
+        console.log('Enviando produto com imagens:', productData.images.length, 'imagens');
+        if (productData.images.length > 0) {
+            console.log('Primeira imagem (primeiros 100 chars):', productData.images[0].substring(0, 100));
+        }
+        console.log('Dados completos do produto:', productData);
+        
+        const response = await fetch(`${API_URL}/products/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify(productData)
+        });
+        
+        if (response.ok) {
+            const newProduct = await response.json();
+            products.push(newProduct);
+            renderProducts();
+            updateStats();
+            hideAddProductForm();
+            showToast('Produto adicionado com sucesso!');
+        } else {
+            const error = await response.json();
+            console.error('Erro do servidor:', error);
+            showToast(error.detail || 'Erro ao adicionar produto', 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao adicionar produto:', error);
+        showToast('Erro ao conectar com o servidor', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
     }
 }
 
-function addProductToList(product) {
-    products.push(product);
-    saveProducts();
-    renderProducts();
-    updateStats();
-    hideAddProductForm();
-    showToast('Produto adicionado com sucesso!');
-}
+// Função removida - agora usamos handleAddProduct com API
 
 function renderProducts() {
     productsGrid.innerHTML = '';
@@ -150,24 +185,30 @@ function createProductCard(product) {
     const card = document.createElement('div');
     card.className = 'product-card';
     
+    // Determinar a fonte da imagem
+    let imageElement = '<i class="fas fa-image"></i>';
+    if (product.images && product.images.length > 0) {
+        const imageSrc = product.images[0];
+        // Verificar se é base64 ou URL
+        if (imageSrc.startsWith('data:') || imageSrc.startsWith('http')) {
+            imageElement = `<img src="${imageSrc}" alt="${product.name}" style="width: 100%; height: 100%; object-fit: cover;">`;
+        }
+    } else if (product.image_url) {
+        imageElement = `<img src="${product.image_url}" alt="${product.name}" style="width: 100%; height: 100%; object-fit: cover;">`;
+    }
+    
     card.innerHTML = `
         <div class="product-image">
-            ${product.image ? 
-                `<img src="${product.image}" alt="${product.name}">` : 
-                '<i class="fas fa-image"></i>'
-            }
+            ${imageElement}
         </div>
         <div class="product-content">
             <h3 class="product-name">${product.name}</h3>
-            <div class="product-price">R$ ${product.price.toFixed(2)}</div>
+            <div class="product-price">R$ ${parseFloat(product.price).toFixed(2)}</div>
             <p class="product-description">${product.description}</p>
             <div class="product-actions">
                 <button class="btn btn-primary btn-small" data-action="show-qr" data-id="${product.id}">
                     <i class="fas fa-qrcode"></i>
                     Ver QR Code
-                </button>
-                <button class="btn btn-outline btn-small" data-action="edit" data-id="${product.id}">
-                    <i class="fas fa-edit"></i>
                 </button>
                 <button class="btn btn-outline btn-small" data-action="delete" data-id="${product.id}">
                     <i class="fas fa-trash"></i>
@@ -177,7 +218,6 @@ function createProductCard(product) {
     `;
     
     card.querySelector('[data-action="show-qr"]').addEventListener('click', () => showQRCode(product.id));
-    card.querySelector('[data-action="edit"]').addEventListener('click', () => editProduct(product.id));
     card.querySelector('[data-action="delete"]').addEventListener('click', () => deleteProduct(product.id));
     
     return card;
@@ -262,7 +302,7 @@ async function showQRCode(productId) {
         ctx.drawImage(generatedQR, 0, 0, qrCanvas.width, qrCanvas.height);
         
         product.qrCode = qrCanvas.toDataURL('image/png');
-        saveProducts();
+        // saveProducts() removido - não salvamos mais localmente
         
         updateModalInfo(product);
         qrModal.classList.add('active');
@@ -298,7 +338,7 @@ function drawManualFallback(canvas, product) {
 
 function updateModalInfo(product) {
     document.getElementById('modal-product-name').textContent = product.name;
-    document.getElementById('modal-product-price').textContent = `R$ ${product.price.toFixed(2)}`;
+    document.getElementById('modal-product-price').textContent = `R$ ${parseFloat(product.price).toFixed(2)}`;
 }
 
 function closeQRModal() {
@@ -324,7 +364,7 @@ function downloadProductPDF() {
         doc.text(currentProduct.name, 105, 40, { align: 'center' });
         
         doc.setFontSize(14);
-        doc.text(`Preço: R$ ${currentProduct.price.toFixed(2)}`, 105, 50, { align: 'center' });
+        doc.text(`Preço: R$ ${parseFloat(currentProduct.price).toFixed(2)}`, 105, 50, { align: 'center' });
         
         const qrCanvas = document.getElementById('qr-canvas');
         const qrSize = 80;
@@ -359,17 +399,41 @@ function downloadProductPDF() {
     }
 }
 
-function editProduct(productId) {
-    showToast('Funcionalidade de edição em desenvolvimento');
-}
+// Adicionar event listener para logout
+document.addEventListener('DOMContentLoaded', function() {
+    const userMenu = document.querySelector('.user-menu');
+    if (userMenu) {
+        userMenu.style.cursor = 'pointer';
+        userMenu.addEventListener('click', function() {
+            if (confirm('Deseja fazer logout?')) {
+                handleLogout();
+            }
+        });
+    }
+});
 
-function deleteProduct(productId) {
+async function deleteProduct(productId) {
     if (confirm('Tem certeza que deseja excluir este produto?')) {
-        products = products.filter(p => p.id !== productId);
-        saveProducts();
-        renderProducts();
-        updateStats();
-        showToast('Produto excluído com sucesso!');
+        try {
+            const response = await fetch(`${API_URL}/products/${productId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+            
+            if (response.ok) {
+                products = products.filter(p => p.id !== productId);
+                renderProducts();
+                updateStats();
+                showToast('Produto excluído com sucesso!');
+            } else {
+                showToast('Erro ao excluir produto', 'error');
+            }
+        } catch (error) {
+            console.error('Erro ao excluir produto:', error);
+            showToast('Erro ao conectar com o servidor', 'error');
+        }
     }
 }
 
@@ -377,7 +441,7 @@ function updateStats() {
     document.getElementById('total-products').textContent = products.length;
     document.getElementById('qr-generated').textContent = products.length;
     
-    const totalRevenue = products.reduce((sum, product) => sum + product.price, 0);
+    const totalRevenue = products.reduce((sum, product) => sum + parseFloat(product.price), 0);
     document.getElementById('total-revenue').textContent = `R$ ${totalRevenue.toFixed(2)}`;
 }
 
@@ -410,19 +474,65 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
-function saveProducts() {
-    localStorage.setItem('garage_sale_products', JSON.stringify(products));
+// Verificar autenticação
+function checkAuth() {
+    const token = localStorage.getItem('access_token');
+    const user = localStorage.getItem('user_data');
+    
+    if (!token || !user) {
+        return false;
+    }
+    
+    authToken = token;
+    currentUser = JSON.parse(user);
+    
+    // Verificar se é vendedor
+    if (currentUser.role !== 'seller') {
+        showToast('Acesso negado. Apenas vendedores podem acessar esta página.', 'error');
+        return false;
+    }
+    
+    return true;
 }
 
-function loadProducts() {
-    const savedProducts = localStorage.getItem('garage_sale_products');
-    if (savedProducts) {
-        products = JSON.parse(savedProducts);
+// Atualizar informações do usuário na navbar
+function updateUserInfo() {
+    const userMenu = document.querySelector('.user-menu span');
+    if (userMenu && currentUser) {
+        userMenu.textContent = currentUser.name || currentUser.email;
     }
 }
 
+// Carregar produtos do backend
+async function loadProductsFromAPI() {
+    try {
+        const response = await fetch(`${API_URL}/products/my-products`, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (response.ok) {
+            products = await response.json();
+        } else {
+            showToast('Erro ao carregar produtos', 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao carregar produtos:', error);
+        showToast('Erro ao conectar com o servidor', 'error');
+    }
+}
+
+// Logout
+function handleLogout() {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user_data');
+    window.location.href = 'index.html';
+}
+
 function generateProductId() {
-    return Date.now() + Math.random().toString(36).substr(2, 9);
+    return Date.now() + Math.random().toString(36).substring(2, 11);
 }
 
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {

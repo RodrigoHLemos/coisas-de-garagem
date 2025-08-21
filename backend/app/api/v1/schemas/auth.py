@@ -36,11 +36,11 @@ class UserRegisterRequest(BaseModel):
     @validator('password')
     def validate_password(cls, v):
         if not re.search(r'[A-Z]', v):
-            raise ValueError('Password must contain at least one uppercase letter')
+            raise ValueError('A senha deve conter pelo menos uma letra maiúscula')
         if not re.search(r'[a-z]', v):
-            raise ValueError('Password must contain at least one lowercase letter')
+            raise ValueError('A senha deve conter pelo menos uma letra minúscula')
         if not re.search(r'[0-9]', v):
-            raise ValueError('Password must contain at least one number')
+            raise ValueError('A senha deve conter pelo menos um número')
         return v
     
     class Config:

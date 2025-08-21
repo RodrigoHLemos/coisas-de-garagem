@@ -32,7 +32,7 @@ class ProductCreateRequest(BaseModel):
     """Schema para criação de produto"""
     name: str = Field(..., min_length=3, max_length=100)
     description: str = Field(..., max_length=500)
-    price: Decimal = Field(..., gt=0, decimal_places=2)
+    price: Decimal = Field(..., gt=0)
     category: ProductCategory
     quantity: int = Field(default=1, gt=0)
     images: Optional[List[str]] = Field(default=[], max_items=5)
@@ -60,7 +60,7 @@ class ProductUpdateRequest(BaseModel):
     """Schema para atualização de produto"""
     name: Optional[str] = Field(None, min_length=3, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
-    price: Optional[Decimal] = Field(None, gt=0, decimal_places=2)
+    price: Optional[Decimal] = Field(None, gt=0)
     category: Optional[ProductCategory] = None
     quantity: Optional[int] = Field(None, gt=0)
     status: Optional[ProductStatus] = None

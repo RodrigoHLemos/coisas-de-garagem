@@ -32,6 +32,26 @@ class UserUpdateRequest(BaseModel):
         return v
 
 
+class UserResponse(BaseModel):
+    """Schema de resposta do usuário"""
+    id: str
+    email: str
+    name: str
+    cpf: str
+    phone: str
+    role: str
+    is_active: bool
+    is_verified: bool
+    store_name: Optional[str]
+    store_description: Optional[str]
+    avatar_url: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+
 class UserProfileResponse(BaseModel):
     """Schema de perfil completo do usuário"""
     id: str

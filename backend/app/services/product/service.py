@@ -29,7 +29,8 @@ class ProductService:
     async def create_product(
         self,
         seller_id: UUID,
-        request: ProductCreateRequest
+        request: ProductCreateRequest,
+        user_token: Optional[str] = None
     ) -> ProductResponse:
         """Criar novo produto"""
         product = Product(
@@ -44,12 +45,12 @@ class ProductService:
             images=request.images or []
         )
         
-        created = await self.repository.create(product)
+        created = await self.repository.create(product, user_token=user_token)
         return self._to_response(created)
     
-    async def get_product(self, product_id: UUID) -> Optional[ProductResponse]:
+    async def get_product(self, product_id: UUID, user_token: Optional[str] = None) -> Optional[ProductResponse]:
         """Buscar produto por ID"""
-        product = await self.repository.get_by_id(product_id)
+        product = await self.repository.get_by_id(product_id, user_token=user_token)
         if product:
             return self._to_response(product)
         return None
@@ -58,10 +59,11 @@ class ProductService:
         self,
         product_id: UUID,
         seller_id: UUID,
-        request: ProductUpdateRequest
+        request: ProductUpdateRequest,
+        user_token: Optional[str] = None
     ) -> Optional[ProductResponse]:
         """Atualizar produto (apenas o dono pode atualizar)"""
-        product = await self.repository.get_by_id(product_id)
+        product = await self.repository.get_by_id(product_id, user_token=user_token)
         
         if not product or product.seller_id != seller_id:
             return None
@@ -82,21 +84,22 @@ class ProductService:
         if request.images is not None:
             product.images = request.images
         
-        updated = await self.repository.update(product)
+        updated = await self.repository.update(product, user_token=user_token)
         return self._to_response(updated)
     
     async def delete_product(
         self,
         product_id: UUID,
-        seller_id: UUID
+        seller_id: UUID,
+        user_token: Optional[str] = None
     ) -> bool:
         """Deletar produto (apenas o dono pode deletar)"""
-        product = await self.repository.get_by_id(product_id)
+        product = await self.repository.get_by_id(product_id, user_token=user_token)
         
         if not product or product.seller_id != seller_id:
             return False
         
-        return await self.repository.delete(product_id)
+        return await self.repository.delete(product_id, user_token=user_token)
     
     async def search_products(
         self,
@@ -105,7 +108,8 @@ class ProductService:
         min_price: Optional[float] = None,
         max_price: Optional[float] = None,
         page: int = 1,
-        page_size: int = 20
+        page_size: int = 20,
+        user_token: Optional[str] = None
     ) -> List[ProductResponse]:
         """Buscar produtos com filtros"""
         skip = (page - 1) * page_size
@@ -116,17 +120,19 @@ class ProductService:
             min_price=Decimal(str(min_price)) if min_price else None,
             max_price=Decimal(str(max_price)) if max_price else None,
             skip=skip,
-            limit=page_size
+            limit=page_size,
+            user_token=user_token
         )
         
         return [self._to_response(p) for p in products]
     
     async def get_seller_products(
         self,
-        seller_id: UUID
+        seller_id: UUID,
+        user_token: Optional[str] = None
     ) -> List[ProductResponse]:
         """Buscar produtos de um vendedor"""
-        products = await self.repository.get_by_seller(seller_id)
+        products = await self.repository.get_by_seller(seller_id, user_token=user_token)
         return [self._to_response(p) for p in products]
     
     def _to_response(self, product: Product) -> ProductResponse:

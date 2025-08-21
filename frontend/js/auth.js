@@ -103,7 +103,60 @@ async function handleRegister(event) {
             form.reset();
             switchModal('register-modal', 'login-modal');
         } else {
-            showNotification(data.detail || 'Erro ao registrar', 'error');
+            // Tratar erro detalhado
+            let errorMessage = 'Erro ao registrar';
+            if (data.detail) {
+                if (typeof data.detail === 'string') {
+                    errorMessage = data.detail;
+                } else if (Array.isArray(data.detail)) {
+                    // Erros de validação do Pydantic
+                    const fieldNames = {
+                        'email': 'E-mail',
+                        'password': 'Senha',
+                        'name': 'Nome',
+                        'cpf': 'CPF',
+                        'phone': 'Telefone',
+                        'role': 'Tipo de usuário'
+                    };
+                    
+                    const errors = data.detail.map(err => {
+                        const field = err.loc[err.loc.length - 1];
+                        const fieldName = fieldNames[field] || field;
+                        let message = err.msg;
+                        
+                        // Traduções específicas
+                        if (message.includes('at least 8 characters')) {
+                            message = 'deve ter pelo menos 8 caracteres';
+                        } else if (message.includes('maiúscula')) {
+                            message = 'deve conter pelo menos uma letra maiúscula';
+                        } else if (message.includes('minúscula')) {
+                            message = 'deve conter pelo menos uma letra minúscula';
+                        } else if (message.includes('número')) {
+                            message = 'deve conter pelo menos um número';
+                        } else if (message.includes('11 digits')) {
+                            message = 'deve ter 11 dígitos';
+                        } else if (message.includes('10 or 11 digits')) {
+                            message = 'deve ter 10 ou 11 dígitos';
+                        }
+                        
+                        return `${fieldName} ${message}`;
+                    });
+                    
+                    // Se houver erros de senha, adicionar dica
+                    const hasPasswordError = data.detail.some(err => 
+                        err.loc[err.loc.length - 1] === 'password'
+                    );
+                    
+                    if (hasPasswordError) {
+                        errorMessage = errors.join('\n') + '\n\nRequisitos da senha:\n• Mínimo 8 caracteres\n• Pelo menos 1 letra maiúscula\n• Pelo menos 1 letra minúscula\n• Pelo menos 1 número';
+                    } else {
+                        errorMessage = errors.join('\n');
+                    }
+                } else if (typeof data.detail === 'object') {
+                    errorMessage = JSON.stringify(data.detail);
+                }
+            }
+            showNotification(errorMessage, 'error');
         }
     } catch (error) {
         console.error('Erro no registro:', error);
@@ -249,6 +302,41 @@ function applyPhoneMask(input) {
     }
 }
 
+// Validar senha em tempo real
+function validatePasswordRealtime(password) {
+    const requirements = {
+        length: password.length >= 8,
+        uppercase: /[A-Z]/.test(password),
+        lowercase: /[a-z]/.test(password),
+        number: /[0-9]/.test(password)
+    };
+    
+    // Atualizar indicadores visuais
+    const reqLength = document.getElementById('req-length');
+    const reqUppercase = document.getElementById('req-uppercase');
+    const reqLowercase = document.getElementById('req-lowercase');
+    const reqNumber = document.getElementById('req-number');
+    
+    if (reqLength) {
+        reqLength.style.color = requirements.length ? '#27ae60' : '#e74c3c';
+        reqLength.innerHTML = requirements.length ? '✓ Mínimo 8 caracteres' : '• Mínimo 8 caracteres';
+    }
+    if (reqUppercase) {
+        reqUppercase.style.color = requirements.uppercase ? '#27ae60' : '#e74c3c';
+        reqUppercase.innerHTML = requirements.uppercase ? '✓ Uma letra maiúscula' : '• Uma letra maiúscula';
+    }
+    if (reqLowercase) {
+        reqLowercase.style.color = requirements.lowercase ? '#27ae60' : '#e74c3c';
+        reqLowercase.innerHTML = requirements.lowercase ? '✓ Uma letra minúscula' : '• Uma letra minúscula';
+    }
+    if (reqNumber) {
+        reqNumber.style.color = requirements.number ? '#27ae60' : '#e74c3c';
+        reqNumber.innerHTML = requirements.number ? '✓ Um número' : '• Um número';
+    }
+    
+    return requirements.length && requirements.uppercase && requirements.lowercase && requirements.number;
+}
+
 // Inicialização quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', function() {
     // Verificar autenticação
@@ -276,6 +364,28 @@ document.addEventListener('DOMContentLoaded', function() {
     phoneInputs.forEach(input => {
         input.addEventListener('input', () => applyPhoneMask(input));
     });
+    
+    // Adicionar validação de senha em tempo real
+    const passwordInput = document.getElementById('register-password');
+    const passwordReqs = document.getElementById('password-requirements');
+    
+    if (passwordInput) {
+        passwordInput.addEventListener('focus', () => {
+            if (passwordReqs) {
+                passwordReqs.style.display = 'block';
+            }
+        });
+        
+        passwordInput.addEventListener('blur', () => {
+            if (passwordReqs && passwordInput.value === '') {
+                passwordReqs.style.display = 'none';
+            }
+        });
+        
+        passwordInput.addEventListener('input', (e) => {
+            validatePasswordRealtime(e.target.value);
+        });
+    }
 });
 
 // Exportar funções para uso global
