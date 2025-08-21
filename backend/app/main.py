@@ -101,7 +101,13 @@ def setup_middlewares(app: FastAPI) -> None:
     if settings.app.environment == "production":
         app.add_middleware(
             TrustedHostMiddleware,
-            allowed_hosts=["*.coisasdegaragem.com", "coisasdegaragem.com"]
+            allowed_hosts=[
+                "*.coisasdegaragem.com",
+                "coisasdegaragem.com",
+                "*.onrender.com",
+                "coisas-de-garagem-api.onrender.com",
+                "localhost"
+            ]
         )
 
 
