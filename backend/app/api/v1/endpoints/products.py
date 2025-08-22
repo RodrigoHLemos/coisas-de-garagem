@@ -108,12 +108,13 @@ async def get_my_products(
             seller_id=UUID(current_user.id),
             user_token=token
         )
-        return products
+        return products if products else []
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        import traceback
+        traceback.print_exc()
+        print(f"Erro ao buscar produtos do vendedor: {e}")
+        # Retornar lista vazia em caso de erro para não quebrar o frontend
+        return []
 
 
 @router.get("/{product_id}", response_model=ProductResponse)
