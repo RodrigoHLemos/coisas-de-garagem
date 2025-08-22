@@ -127,7 +127,7 @@ async function handleAddProduct(e) {
         const productData = {
             name: name,
             description: description,
-            price: price,
+            price: parseFloat(price), // Garantir que é número
             category: "other", // Por enquanto usando categoria padrão
             quantity: 1,
             images: imageUrls
