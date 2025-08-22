@@ -33,13 +33,22 @@ class ProductService:
         user_token: Optional[str] = None
     ) -> ProductResponse:
         """Criar novo produto"""
+        from ...domain.entities.product import ProductCategory
+        
+        # Garantir que category é string válida
+        category = request.category
+        if hasattr(category, 'value'):
+            category = category.value
+        elif not isinstance(category, str):
+            category = "other"
+        
         product = Product(
             id=uuid4(),
             seller_id=seller_id,
             name=request.name,
             description=request.description,
             price=Money(request.price),
-            category=request.category,
+            category=category,
             quantity=request.quantity,
             status="available",
             images=request.images or []
