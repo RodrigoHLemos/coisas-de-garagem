@@ -1,7 +1,7 @@
 """
 Product schemas para validação de requisições/respostas.
 """
-from typing import Optional, List
+from typing import Optional, List, Union
 from datetime import datetime
 from decimal import Decimal
 from pydantic import BaseModel, Field, validator
@@ -33,9 +33,19 @@ class ProductCreateRequest(BaseModel):
     name: str = Field(..., min_length=3, max_length=100)
     description: str = Field(..., max_length=500)
     price: Decimal = Field(..., gt=0)
-    category: ProductCategory
+    category: Union[ProductCategory, str] = Field(default=ProductCategory.OTHER)
     quantity: int = Field(default=1, gt=0)
     images: Optional[List[str]] = Field(default=[], max_items=5)
+    
+    @validator('category', pre=True)
+    def validate_category(cls, v):
+        if isinstance(v, str):
+            # Converter string para enum
+            try:
+                return ProductCategory(v.lower())
+            except ValueError:
+                return ProductCategory.OTHER
+        return v
     
     @validator('price')
     def validate_price(cls, v):
