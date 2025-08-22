@@ -207,6 +207,7 @@ class SupabaseProductRepository:
     def _to_entity(self, data: Dict[str, Any]) -> Product:
         """Converter dados do banco para entidade Product"""
         from ...domain.value_objects.money import Money
+        from ...domain.entities.product import ProductCategory, ProductStatus
         
         # Processar imagens - priorizar o campo 'images' (JSONB)
         images = []
@@ -217,15 +218,30 @@ class SupabaseProductRepository:
             # Fallback para o campo antigo 'image_url' se existir
             images = [data["image_url"]]
         
+        # Converter strings para enums
+        category = data.get("category", "other")
+        if isinstance(category, str):
+            try:
+                category = ProductCategory(category)
+            except ValueError:
+                category = ProductCategory.OTHER
+        
+        status = data.get("status", "available")
+        if isinstance(status, str):
+            try:
+                status = ProductStatus(status)
+            except ValueError:
+                status = ProductStatus.AVAILABLE
+        
         return Product(
             id=UUID(data["id"]),
             seller_id=UUID(data["seller_id"]),
             name=data["name"],
             description=data["description"],
             price=Money(Decimal(data["price"])),
-            category=data["category"],
+            category=category,
             quantity=data["quantity"],
-            status=data["status"],
+            status=status,
             images=images,
             created_at=datetime.fromisoformat(data["created_at"]),
             updated_at=datetime.fromisoformat(data["updated_at"])
